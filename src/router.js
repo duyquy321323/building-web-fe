@@ -5,6 +5,7 @@ import LayoutForUser from './layouts/layoutForUser/layout';
 import BuildingAddEdit from './page/buiding-add-edit';
 import BuildingSearch from './page/buiding-search';
 import Contact from './page/contact';
+import EditAccount from './page/edit-account';
 import Home from './page/home';
 import Introduction from './page/introduction';
 import Login from './page/login';
@@ -111,9 +112,16 @@ export default function Router() {
         },
         {
             path: "/admin/account",
-            element: isLoggedIn ? (isAdmin || isStaff ? <LayoutForUser name={"Quản lý tài khoản"} isLoggedIn={isLoggedIn} /> : <Unauthorized />) : <Navigate to={'/account/login'}></Navigate>,
+            element: isLoggedIn ? (isAdmin ? <LayoutForUser name={"Quản lý tài khoản"} isLoggedIn={isLoggedIn} /> : <Unauthorized />) : <Navigate to={'/account/login'}></Navigate>,
             children: [
                 { index: true, element: <ManagerAccount /> },
+            ],
+        },
+        {
+            path: "/admin/account-edit",
+            element: isLoggedIn ? (isAdmin ? <LayoutForUser name={"Quản lý tài khoản"} isLoggedIn={isLoggedIn} /> : <Unauthorized />) : <Navigate to={'/account/login'}></Navigate>,
+            children: [
+                { index: true, element: <EditAccount /> },
             ],
         },
     ]);

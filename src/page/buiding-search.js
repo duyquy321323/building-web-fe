@@ -43,10 +43,8 @@ const BuildingSearch = () => {
     const [idUserDialog, setIdUserDialog] = useState(selectUserCheck);
     const [idBuildingDialog, setIdBuildingDialog] = useState(null);
     const [requestParamPath, setRequestParamPath] = useState(null);
-    const [autoCheck, setAutoCheck] = useState(false);
-    let count = 0;
     const [scroll, setScroll] = React.useState('paper');
-
+    const [contentPrevDelete, setContentPrevDelete] = useState("");
     const [refresh, setRefresh] = useState(false);
     const navigate = useNavigate();
     const userData = useSelector((state) => {
@@ -163,13 +161,12 @@ const BuildingSearch = () => {
         if (selectedRows.length === 1) {
             setIdBuildingDialog(selectedRows.at(0));
             if (checked) {
-                setIdUserDialog([...idUserDialog, Number(value)]
-                );
+                setSelectUserCheck([...selectUserCheck, Number(value)]);
+                setIdUserDialog([...idUserDialog, Number(value)]);
 
             } else {
-                setIdUserDialog(idUserDialog.filter(id => id !== Number(value))
-                );
-
+                setIdUserDialog(idUserDialog.filter(id => id !== Number(value)));
+                setSelectUserCheck(selectUserCheck.filter(id => id !== Number(value)));
             }
         }
     };
@@ -190,6 +187,7 @@ const BuildingSearch = () => {
                 setOpen(true);
                 setIdUserDialog(idUserDialog);
                 setContent("Giao tòa nhà cho nhân viên thành công.")
+                setOpenDialog(false);
             }
         } catch (error) {
             setOpen(true);
@@ -202,11 +200,6 @@ const BuildingSearch = () => {
         }
     };
 
-    const handleButtonClick = (row) => {
-        console.log("Button clicked for row: ", row);
-        // Thực hiện hành động bạn muốn ở đây
-    };
-
     const handleSelectionChange = (selection) => {
         setSelectedRows(selection);
     };
@@ -215,13 +208,10 @@ const BuildingSearch = () => {
         try {
             if (selectedRows.length > 0) {
                 const ids = selectedRows.join(",");
-                const response = await api.delete(`/buildings/${ids}`);
+                await api.delete(`/buildings/${ids}`);
                 setRefresh(pre => !pre);
-                count = 1;
-            }
-            else {
-                setOpen(true);
-                setContent("Hãy chọn tòa nhà cần xóa.");
+                setSelectedRows([]);
+                setOpenDialogPrevDelete(false);
             }
         } catch (error) {
             setOpen(true);
@@ -235,14 +225,14 @@ const BuildingSearch = () => {
     };
 
     useEffect(() => {
-        if (count !== 0) {
-            handleGetBuilding();
-        }
+        handleGetBuilding();
     }, [refresh]);
 
     const handleNavigate = (e, r) => {
         console.log("handle navigate");
-        setSelectedRows([r.id]);
+        if (r) {
+            sessionStorage.setItem("idBuilding", r.id);
+        }
         navigate(e);
     }
 
@@ -255,6 +245,7 @@ const BuildingSearch = () => {
 
     const handleCloseDialog = () => {
         console.log("close dialog");
+        setSelectedRows([]);
         setOpenDialog(false);
     };
 
@@ -289,6 +280,38 @@ const BuildingSearch = () => {
             console.error("Error fetching users:", error);
         }
     };
+
+    const [openDialogPrevDelete, setOpenDialogPrevDelete] = useState(false);
+    const handleClickOpenPreDelete = (scrollType, row) => () => {
+        setOpenDialogPrevDelete(true);
+        setScroll(scrollType);
+        console.log("Click open dialog1");
+        console.log(selectedRows);
+        if (!Array.isArray(row) || (Array.isArray(row) && Array.from(row).length > 0)) {
+            setSelectedRows([row]);
+            setContentPrevDelete("Chú chắc chứ?");
+        }
+        else {
+            setContentPrevDelete("Vui lòng chọn tòa nhà để xóa!")
+        }
+    };
+
+    const handleCloseDialogPrevDelete = () => {
+        console.log("close dialog");
+        setSelectedRows([]);
+        setOpenDialogPrevDelete(false);
+    };
+
+    const descriptionElementDeleteRef = React.useRef(null);
+    React.useEffect(() => {
+        console.log("effect open dialog");
+        if (openDialogPrevDelete) {
+            const { current: descriptionElement } = descriptionElementDeleteRef;
+            if (descriptionElement !== null) {
+                descriptionElement.focus();
+            }
+        }
+    }, [openDialogPrevDelete]);
 
     useEffect(() => {
         console.log("effect select row and opendialog");
@@ -343,7 +366,7 @@ const BuildingSearch = () => {
                         variant="contained"
                         color="error"
                         size='small'
-                        onClick={() => handleButtonClick(params.row)}
+                        onClick={handleClickOpenPreDelete('paper', params.row.id)}
                     >
                         <DomainDisabledIcon />
                     </Button>
@@ -622,11 +645,7 @@ const BuildingSearch = () => {
             {userData.roles.includes("MANAGER") ?
                 <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                     <Box sx={{ display: 'flex', gap: '10px', my: '10px' }}>
-                        <Button color='info' variant="contained" title='Sửa tòa nhà' onClick={() => handleNavigate("/buildings/edit")} size='small'><EditIcon style={{ fontSize: '30px' }} />
-                        </Button>
                         <React.Fragment>
-                            <Button color='secondary' variant="contained" title='Giao tòa nhà' onClick={handleClickOpen('paper')} size='small'><AssignmentIcon style={{ fontSize: '30px' }} />
-                            </Button>
                             <Dialog
                                 open={openDialog}
                                 onClose={handleCloseDialog}
@@ -634,7 +653,7 @@ const BuildingSearch = () => {
                                 aria-labelledby="scroll-dialog-title"
                                 aria-describedby="scroll-dialog-description"
                             >
-                                <DialogTitle id="scroll-dialog-title">Subscribe</DialogTitle>
+                                <DialogTitle id="scroll-dialog-title">Chọn nhân viên để giao</DialogTitle>
                                 <DialogContent dividers={scroll === 'paper'}>
                                     <DialogContentText
                                         id="scroll-dialog-description"
@@ -645,7 +664,7 @@ const BuildingSearch = () => {
                                             {console.log("userHTML" + users.map(user => selectUserCheck.includes(user.name.id)))}
                                             {console.log("selectHTML" + selectUserCheck)}
                                             {users.map((user) =>
-                                                <FormControlLabel control={<Checkbox defaultChecked={selectUserCheck.includes(user.name.id)} onChange={handleChangeDialog} />} value={user.name.id} label={user.name.fullname} />
+                                                <FormControlLabel control={<Checkbox checked={selectUserCheck.includes(user.name.id)} onChange={handleChangeDialog} />} value={user.name.id} label={user.name.fullname} />
                                             )
                                             }
                                         </Box>
@@ -659,7 +678,7 @@ const BuildingSearch = () => {
                         </React.Fragment>
                     </Box>
                     <Box sx={{ display: 'flex', gap: '10px', my: '10px' }}>
-                        <Button color='error' variant="contained" title='Xóa tòa nhà được chọn' onClick={handleDeleteBuilding} size='small'><DomainDisabledIcon style={{ fontSize: '30px' }} />
+                        <Button color='error' variant="contained" title='Xóa tòa nhà được chọn' onClick={handleClickOpenPreDelete('paper', selectedRows)} size='small'><DomainDisabledIcon style={{ fontSize: '30px' }} />
                         </Button>
                         <Button color='success' variant="contained" title='Thêm tòa nhà' onClick={() => handleNavigate("/buildings/new")} size='small'><DomainAddIcon style={{ fontSize: '30px' }} />
                         </Button>
@@ -688,6 +707,33 @@ const BuildingSearch = () => {
                 onClose={handleClose}
                 message={content}
             />
+            <React.Fragment>
+                <Dialog
+                    open={openDialogPrevDelete}
+                    onClose={handleCloseDialogPrevDelete}
+                    scroll={scroll}
+                    aria-labelledby="scroll-dialog-title"
+                    aria-describedby="scroll-dialog-description"
+                >
+                    <DialogContent dividers={scroll === 'paper'}>
+                        <DialogContentText
+                            id="scroll-dialog-description"
+                            ref={descriptionElementDeleteRef}
+                            tabIndex={-1}
+                        >
+                            {contentPrevDelete}
+                        </DialogContentText>
+                    </DialogContent>
+                    <DialogActions>
+                        {selectedRows.length > 0 ?
+                            <Box>
+                                <Button onClick={handleCloseDialogPrevDelete}>Hủy thao tác</Button>
+                                <Button onClick={handleDeleteBuilding}>Xóa</Button>
+                            </Box> : <Button onClick={handleCloseDialogPrevDelete}>Đóng</Button>
+                        }
+                    </DialogActions>
+                </Dialog>
+            </React.Fragment>
         </>
     );
 }

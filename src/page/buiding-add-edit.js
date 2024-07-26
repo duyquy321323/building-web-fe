@@ -1,7 +1,8 @@
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import DomainAddIcon from '@mui/icons-material/DomainAdd';
-import { Box, Button, Checkbox, FormControl, FormControlLabel, InputLabel, MenuItem, Select, Snackbar, styled, TextField, Typography } from "@mui/material";
+import { Box, Button, Checkbox, FormControl, FormControlLabel, Grid, InputLabel, MenuItem, Select, Snackbar, styled, TextField, Typography } from "@mui/material";
 import React, { useEffect, useState } from "react";
+import { useNavigate } from 'react-router-dom';
 import api from '../api';
 
 const VisuallyHiddenInput = styled('input')({
@@ -141,6 +142,11 @@ const BuildingAddEdit = ({ name }) => {
 
     const [open, setOpen] = React.useState(false);
     const [content, setContent] = React.useState("");
+    const navigate = useNavigate();
+    const handleClosePage = () => {
+        sessionStorage.removeItem("idBuilding");
+        navigate("/buildings/search");
+    }
 
 
     const handleClose = (event, reason) => {
@@ -484,10 +490,19 @@ const BuildingAddEdit = ({ name }) => {
                             id="linkOfBuilding" />
                     </Button>
                 </Box>
-                <Button sx={{ height: '50px' }} variant="contained" startIcon={<DomainAddIcon style={{ fontSize: '40px' }} />} onClick={handleAddBuilding}>
-                    Thêm
-                </Button>
-            </Box>
+                <Grid container justifyContent='space-between'>
+                    <Grid item xs={5.75}>
+                        <Button sx={{ height: '50px' }} variant="outlined" fullWidth onClick={handleClosePage}>
+                            Hủy thao tác
+                        </Button>
+                    </Grid>
+                    <Grid item xs={5.75}>
+                        <Button sx={{ height: '50px' }} fullWidth variant="contained" startIcon={<DomainAddIcon style={{ fontSize: '40px' }} />} onClick={handleAddBuilding}>
+                            Thêm
+                        </Button>
+                    </Grid>
+                </Grid>
+            </Box >
             <Snackbar
                 open={open}
                 autoHideDuration={5000}
