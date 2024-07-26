@@ -1,24 +1,27 @@
-import logo from './logo.svg';
+import { Box } from '@mui/material';
+import { ThemeProvider } from '@mui/material/styles';
+import React from 'react';
+import { HelmetProvider } from 'react-helmet-async';
+import { Provider } from 'react-redux'; // Import Provider
+import { BrowserRouter } from 'react-router-dom';
 import './App.css';
+import store from './redux/store'; // Import Redux store
+import Router from './router';
+import theme from './theme';
 
 function App() {
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
+    <Provider store={store}> {/* Wrap your entire app in Provider and pass store */}
+      <ThemeProvider theme={theme}>
+        <HelmetProvider>
+          <BrowserRouter>
+            <Box>
+              <Router />
+            </Box>
+          </BrowserRouter>
+        </HelmetProvider>
+      </ThemeProvider>
+    </Provider>
   );
 }
 
