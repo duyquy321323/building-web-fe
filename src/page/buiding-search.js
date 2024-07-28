@@ -4,12 +4,13 @@ import DomainDisabledIcon from '@mui/icons-material/DomainDisabled';
 import EditIcon from '@mui/icons-material/Edit';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import SearchIcon from '@mui/icons-material/Search';
-import { Accordion, AccordionDetails, AccordionSummary, Box, Button, Checkbox, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, FormControl, FormControlLabel, Grid, InputLabel, MenuItem, Select, Snackbar, TextField, Typography } from "@mui/material";
+import { Accordion, AccordionDetails, AccordionSummary, Box, Button, Checkbox, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, FormControl, FormControlLabel, Grid, InputLabel, MenuItem, Select, TextField, Typography } from "@mui/material";
 import { DataGrid } from '@mui/x-data-grid';
 import React, { useEffect, useState } from 'react';
 import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import api from '../api';
+import { useSnackbar } from './snackbarcontext';
 
 
 const BuildingSearch = () => {
@@ -34,11 +35,9 @@ const BuildingSearch = () => {
     console.log("render again!----------------------------------------");
     const [districts, setDistricts] = useState([]);
     const [users, setUsers] = useState([]);
-    const [open, setOpen] = React.useState(false);
 
     const [openDialog, setOpenDialog] = React.useState(false);
     const [selectedRows, setSelectedRows] = React.useState([]);
-    const [content, setContent] = React.useState("");
     const [selectUserCheck, setSelectUserCheck] = useState([]);
     const [idUserDialog, setIdUserDialog] = useState(selectUserCheck);
     const [idBuildingDialog, setIdBuildingDialog] = useState(null);
@@ -104,6 +103,8 @@ const BuildingSearch = () => {
         fetchUsers();
     }, []);
 
+    const { showSnackbar } = useSnackbar();
+
     const [buidingData, setBuildingData] = useState([]);
     const handleGetBuilding = async () => {
         try {
@@ -112,21 +113,13 @@ const BuildingSearch = () => {
                 setBuildingData(response.data.content);
             }
         } catch (error) {
-            setOpen(true);
             if (error.response && error.response.status === 400) {
-                setContent("Yêu cầu không hợp lệ.");
+                showSnackbar("Yêu cầu không hợp lệ.");
             } else {
-                setContent("Đã xảy ra lỗi, vui lòng thử lại sau.");
+                showSnackbar("Đã xảy ra lỗi, vui lòng thử lại sau.");
             }
             console.error('Error logging in:', error);
         }
-    };
-
-    const handleClose = (event, reason) => {
-        if (reason === 'clickaway') {
-            return;
-        }
-        setOpen(false);
     };
 
     const handleChange = (event) => {
@@ -184,17 +177,16 @@ const BuildingSearch = () => {
         try {
             const response = await api.post(`${requestParamPath}`);
             if (response.status === 200) {
-                setOpen(true);
                 setIdUserDialog(idUserDialog);
-                setContent("Giao tòa nhà cho nhân viên thành công.")
+                showSnackbar("Giao tòa nhà cho nhân viên thành công.");
                 setOpenDialog(false);
+                setSelectedRows([]);
             }
         } catch (error) {
-            setOpen(true);
             if (error.response && error.response.status === 400) {
-                setContent("Yêu cầu không hợp lệ.");
+                showSnackbar("Yêu cầu không hợp lệ.");
             } else {
-                setContent("Đã xảy ra lỗi, vui lòng thử lại sau.");
+                showSnackbar("Đã xảy ra lỗi, vui lòng thử lại sau.");
             }
             console.error('Error logging in:', error);
         }
@@ -214,11 +206,10 @@ const BuildingSearch = () => {
                 setOpenDialogPrevDelete(false);
             }
         } catch (error) {
-            setOpen(true);
             if (error.response && error.response.status === 400) {
-                setContent("Yêu cầu không hợp lệ.");
+                showSnackbar("Yêu cầu không hợp lệ.");
             } else {
-                setContent("Đã xảy ra lỗi, vui lòng thử lại sau.");
+                showSnackbar("Đã xảy ra lỗi, vui lòng thử lại sau.");
             }
             console.error('Error logging in:', error);
         }
@@ -287,18 +278,20 @@ const BuildingSearch = () => {
         setScroll(scrollType);
         console.log("Click open dialog1");
         console.log(selectedRows);
-        if (!Array.isArray(row) || (Array.isArray(row) && Array.from(row).length > 0)) {
+        if (!Array.isArray(row)) {
             setSelectedRows([row]);
             setContentPrevDelete("Chú chắc chứ?");
         }
-        else {
+        else if ((Array.isArray(row) && Array.from(row).length > 0)) {
+            setSelectedRows(row);
+            setContentPrevDelete("Chú chắc chứ?");
+        } else {
             setContentPrevDelete("Vui lòng chọn tòa nhà để xóa!")
         }
     };
 
     const handleCloseDialogPrevDelete = () => {
         console.log("close dialog");
-        setSelectedRows([]);
         setOpenDialogPrevDelete(false);
     };
 
@@ -336,8 +329,10 @@ const BuildingSearch = () => {
         { field: 'leasedArea', headerName: 'Diện tích thuê', width: 170, flex: 1 },
         { field: 'rentPrice', headerName: 'Giá thuê', width: 110, flex: 1 },
         { field: 'serviceFee', headerName: 'Phí dịch vụ', width: 160, flex: 1 },
-        { field: 'brokerageFee', headerName: 'Phí môi giới', width: 150, flex: 1 },
-        {
+        { field: 'brokerageFee', headerName: 'Phí môi giới', width: 150, flex: 1 }
+    ];
+    if (userData.roles.includes("MANAGER")) {
+        columns.push({
             field: 'action',
             headerName: 'Thao tác',
             width: 250,
@@ -374,8 +369,8 @@ const BuildingSearch = () => {
             ),
             align: 'center',
             headerAlign: 'center'
-        }
-    ];
+        })
+    };
 
     return (
         <>
@@ -388,7 +383,7 @@ const BuildingSearch = () => {
                     <Typography color='rgb(25, 118, 210)' fontWeight={'900'}>Tìm kiếm tòa nhà</Typography>
                 </AccordionSummary>
                 <AccordionDetails>
-                    <Grid container my={2} sx={{ justifyContent: 'space-between' }}>
+                    <Grid container my={3} sx={{ justifyContent: 'space-between' }}>
                         <Grid item xs={5.75}>
                             <Box>
                                 <TextField
@@ -513,7 +508,7 @@ const BuildingSearch = () => {
                             </Box>
                         </Grid>
                     </Grid>
-                    <Grid container my={4} sx={{ justifyContent: 'space-between' }}>
+                    <Grid container my={3} sx={{ justifyContent: 'space-between' }}>
                         <Grid item xs={2.75}>
                             <Box>
                                 <TextField
@@ -698,15 +693,10 @@ const BuildingSearch = () => {
                     disableRowSelectionOnClick
                     checkboxSelection
                     disableColumnMenu
+                    rowSelectionModel={selectedRows}
                     onRowSelectionModelChange={(newSelection) => handleSelectionChange(newSelection)}
                 />
             </div>
-            <Snackbar
-                open={open}
-                autoHideDuration={5000}
-                onClose={handleClose}
-                message={content}
-            />
             <React.Fragment>
                 <Dialog
                     open={openDialogPrevDelete}

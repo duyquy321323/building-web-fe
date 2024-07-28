@@ -2,16 +2,21 @@ import { useSelector } from 'react-redux';
 import { Navigate, useRoutes } from "react-router-dom";
 import Layout from './layouts/layout';
 import LayoutForUser from './layouts/layoutForUser/layout';
-import BuildingAddEdit from './page/buiding-add-edit';
+import CreateAccount from './page/admin-new-account';
+import BuildingAdd from './page/buiding-add';
 import BuildingSearch from './page/buiding-search';
+import BuildingEdit from './page/building-edit';
 import Contact from './page/contact';
+import CreateCustomer from './page/create-customer';
 import EditAccount from './page/edit-account';
+import EditCustomer from './page/edit-customer';
 import Home from './page/home';
 import Introduction from './page/introduction';
 import Login from './page/login';
 import ManagerAccount from './page/manager-account';
 import ManagerCustomer from './page/manager-customer';
 import News from './page/news';
+import Profile from './page/profile';
 import RealEstateProject from './page/real-estate-project';
 import Register from './page/register';
 import Unauthorized from './page/unauthentication';
@@ -83,6 +88,13 @@ export default function Router() {
             ],
         },
         {
+            path: "/profile",
+            element: isLoggedIn ? <LayoutForUser name={"Thông tin tài khoản"} /> : <Navigate to={'/account/login'}></Navigate>,
+            children: [
+                { index: true, element: <Profile userData={userData} /> },
+            ],
+        },
+        {
             path: "/buildings/search",
             element: isLoggedIn ? (isAdmin || isStaff ? <LayoutForUser name={"Quản lý tòa nhà"} isLoggedIn={isLoggedIn} /> : <Unauthorized />) : <Navigate to={'/account/login'}></Navigate>,
             children: [
@@ -93,14 +105,14 @@ export default function Router() {
             path: "/buildings/new",
             element: isLoggedIn ? (isAdmin || isStaff ? <LayoutForUser name={"Quản lý tòa nhà"} isLoggedIn={isLoggedIn} /> : <Unauthorized />) : <Navigate to={'/account/login'}></Navigate>,
             children: [
-                { index: true, element: <BuildingAddEdit name={'Thêm tòa nhà'} /> },
+                { index: true, element: <BuildingAdd name={'Thêm tòa nhà'} /> },
             ],
         },
         {
             path: "/buildings/edit",
             element: isLoggedIn ? (isAdmin || isStaff ? <LayoutForUser name={"Quản lý tòa nhà"} isLoggedIn={isLoggedIn} /> : <Unauthorized />) : <Navigate to={'/account/login'}></Navigate>,
             children: [
-                { index: true, element: <BuildingAddEdit name={'Sửa tòa nhà'} /> },
+                { index: true, element: <BuildingEdit name={'Cập nhật tòa nhà'} /> },
             ],
         },
         {
@@ -108,6 +120,20 @@ export default function Router() {
             element: isLoggedIn ? (isAdmin || isStaff ? <LayoutForUser name={"Quản lý khách hàng"} isLoggedIn={isLoggedIn} /> : <Unauthorized />) : <Navigate to={'/account/login'}></Navigate>,
             children: [
                 { index: true, element: <ManagerCustomer /> },
+            ],
+        },
+        {
+            path: "/customer/edit",
+            element: isLoggedIn ? (isAdmin || isStaff ? <LayoutForUser name={"Quản lý khách hàng"} isLoggedIn={isLoggedIn} /> : <Unauthorized />) : <Navigate to={'/account/login'}></Navigate>,
+            children: [
+                { index: true, element: <EditCustomer /> },
+            ],
+        },
+        {
+            path: "/customer/new",
+            element: isLoggedIn ? (isAdmin || isStaff ? <LayoutForUser name={"Quản lý khách hàng"} isLoggedIn={isLoggedIn} /> : <Unauthorized />) : <Navigate to={'/account/login'}></Navigate>,
+            children: [
+                { index: true, element: <CreateCustomer /> },
             ],
         },
         {
@@ -122,6 +148,13 @@ export default function Router() {
             element: isLoggedIn ? (isAdmin ? <LayoutForUser name={"Quản lý tài khoản"} isLoggedIn={isLoggedIn} /> : <Unauthorized />) : <Navigate to={'/account/login'}></Navigate>,
             children: [
                 { index: true, element: <EditAccount /> },
+            ],
+        },
+        {
+            path: "/admin/account-new",
+            element: isLoggedIn ? (isAdmin ? <LayoutForUser name={"Quản lý tài khoản"} isLoggedIn={isLoggedIn} /> : <Unauthorized />) : <Navigate to={'/account/login'}></Navigate>,
+            children: [
+                { index: true, element: <CreateAccount /> },
             ],
         },
     ]);

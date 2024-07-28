@@ -1,22 +1,28 @@
 import { Box, Button, FormControl, Grid, InputLabel, MenuItem, Select, TextField, Typography } from "@mui/material";
 import React, { useEffect, useState } from "react";
-import { useNavigate } from 'react-router-dom';
-import api from "../api";
+import { useNavigate } from "react-router-dom";
+import api from '../api';
 import { useSnackbar } from "./snackbarcontext";
 
 const CreateAccount = () => {
-
-    const [editAccount, setEditAccount] = useState({
+    const [createAccount, setCreateAccount] = useState({
+        username: "",
         fullname: "",
         roles: []
     });
 
+    const [errors, setErrors] = useState({
+        username: false,
+        fullname: false
+    });
+
     const navigate = useNavigate();
 
-    const handleCloseEdit = () => {
-        sessionStorage.removeItem("accountUsername");
+    const handleCloseCreate = () => {
         navigate("/admin/account");
     }
+
+    const { showSnackbar } = useSnackbar();
 
     const [roles, setRoles] = useState([]);
     const fetchRoles = async () => {
@@ -35,28 +41,21 @@ const CreateAccount = () => {
     useEffect(() => {
         fetchRoles();
     }, []);
-    const { showSnackbar } = useSnackbar();
-    const handleEditAccount = async () => {
-        try {
-            const response = await api.put(`/admin/account?username=${sessionStorage.getItem('accountUsername')}&fullname=${editAccount.fullname}&roles=${editAccount.roles.join(',')}`);
-            if (response.status === 200) {
-                handleCloseEdit();
-                showSnackbar("Cập nhật thành công.");
-            }
-            else {
-                showSnackbar("Yêu cầu không hợp lệ.");
-            }
-        } catch (error) {
-            showSnackbar("Yêu cầu không hợp lệ.");
-            console.error('Error patch in:', error);
+
+    const handleCreateAccount = async () => {
+        if (!createAccount.fullname.trim() || !createAccount.username.trim()) {
+            setErrors({
+                fullname: !createAccount.fullname.trim(),
+                username: !createAccount.username.trim(),
+            });
+            showSnackbar("Vui lòng điền tất cả các trường bắt buộc!");
+            return;
         }
-    };
-    const handleResetPassword = async () => {
         try {
-            const response = await api.put(`/admin/password?username=${sessionStorage.getItem('accountUsername')}`);
-            if (response.status === 200) {
-                handleCloseEdit();
-                showSnackbar("Đặt lại mật khẩu thành công. Mật khẩu là 321323.");
+            const response = await api.post(`/admin/account`, createAccount);
+            if (response.status === 201) {
+                handleCloseCreate();
+                showSnackbar("Tạo tài khoản thành công.");
             }
             else {
                 showSnackbar("Yêu cầu không hợp lệ.");
@@ -68,24 +67,60 @@ const CreateAccount = () => {
     };
     const handleChange = (event) => {
         const { name, value } = event.target;
-        setEditAccount((prev) => ({
+        setCreateAccount((prev) => ({
             ...prev,
             [name]: name === "roles" ? [value] : value
         }));
+        if (value.trim() !== "") {
+            setErrors((prevErrors) => ({
+                ...prevErrors,
+                [name]: false,
+            }));
+        }
+    };
+
+    const handleBlur = (event) => {
+        const { name, value } = event.target;
+        if (value.trim() === "") {
+            setErrors((prevErrors) => ({
+                ...prevErrors,
+                [name]: true,
+            }));
+        }
     };
 
     return (
         <Box sx={{ display: 'flex', flexDirection: 'column', maxWidth: '50%', gap: '30px', margin: '30px auto' }}>
-            <Typography color='rgb(25, 118, 210)' fontWeight={'900'} lineHeight={3} >Thông tin tài khoản</Typography>
+            <Typography color='rgb(25, 118, 210)' fontWeight={'900'} lineHeight={3} >Tạo tài khoản</Typography>
+            <Box>
+                <TextField
+                    id="username"
+                    name="username"
+                    label="Tên tài khoản"
+                    variant="outlined"
+                    value={createAccount.username}
+                    onChange={handleChange}
+                    size='small'
+                    onBlur={handleBlur}
+                    error={errors.username}
+                    helperText={errors.username ? "Tên tài khoản là bắt buộc" : ""}
+                    required
+                    fullWidth
+                />
+            </Box>
             <Box>
                 <TextField
                     id="fullname"
                     name="fullname"
                     label="Họ và tên"
                     variant="outlined"
-                    value={editAccount.fullname}
+                    value={createAccount.fullname}
                     onChange={handleChange}
                     size='small'
+                    onBlur={handleBlur}
+                    error={errors.fullname}
+                    helperText={errors.fullname ? "Tên là bắt buộc" : ""}
+                    required
                     fullWidth
                 />
             </Box>
@@ -96,7 +131,7 @@ const CreateAccount = () => {
                         labelId="demo-simple-select-label"
                         id="demo-simple-select"
                         name="roles"
-                        value={editAccount.roles}
+                        value={createAccount.roles}
                         label="---Chọn vai trò---"
                         onChange={handleChange}
                     >
@@ -108,19 +143,16 @@ const CreateAccount = () => {
             </Box>
             <Grid container justifyContent={'space-between'}>
                 <Grid item xs={5.75}>
-                    <Button fullWidth variant="outlined" onClick={handleCloseEdit} size='small'>
+                    <Button fullWidth variant="outlined" onClick={handleCloseCreate} size='small'>
                         Hủy thao tác
                     </Button>
                 </Grid>
                 <Grid item xs={5.75}>
-                    <Button fullWidth variant="contained" onClick={handleEditAccount} size='small'>
-                        Cập nhật thông tin
+                    <Button fullWidth variant="contained" onClick={handleCreateAccount} size='small'>
+                        Tạo tài khoản
                     </Button>
                 </Grid>
             </Grid>
-            <Button fullWidth variant="text" title="Đặt lại mật khẩu của tài khoản đang sửa về lại 321323" onClick={handleResetPassword} size='small'>
-                Đặt lại mật khẩu
-            </Button>
         </Box>
     );
 }

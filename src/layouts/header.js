@@ -1,6 +1,5 @@
 import AdbIcon from '@mui/icons-material/Adb';
 import ApartmentIcon from '@mui/icons-material/Apartment';
-import { Snackbar } from '@mui/material';
 import AppBar from '@mui/material/AppBar';
 import Avatar from '@mui/material/Avatar';
 import Box from '@mui/material/Box';
@@ -16,6 +15,7 @@ import * as React from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import api from '../api';
+import { useSnackbar } from '../page/snackbarcontext';
 import { logout } from '../redux/actions';
 
 function Header({ isLoggedIn }) {
@@ -27,6 +27,8 @@ function Header({ isLoggedIn }) {
         expiryTime: "",
         roles: []
     })
+
+    const { showSnackbar } = useSnackbar();
 
     const userDataFromStore = useSelector(state => state.auth.userData);
     React.useEffect(() => {
@@ -43,7 +45,6 @@ function Header({ isLoggedIn }) {
 
     const handleLogout = async () => {
         try {
-            setOpen(true);
             // Gửi yêu cầu POST tới API /account/logout
             const response = await api.post('/account/logout');
             if (response.status === 200) {
@@ -52,25 +53,14 @@ function Header({ isLoggedIn }) {
                 localStorage.removeItem('expiryTime');
                 setAnchorElUser(null);
                 dispatch(logout())
-                setContent("Đăng xuất thành công!");
+                showSnackbar("Đăng xuất thành công!");
                 // Chuyển hướng người dùng đến trang đăng nhập
                 navigate('/account/login');
             }
         } catch (error) {
-            setContent("Đăng xuất thất bại. Hãy đăng nhập trước!");
+            showSnackbar("Đăng xuất thất bại. Hãy đăng nhập trước!");
             console.error("Error khi logout:", error);
         }
-    };
-
-    const [open, setOpen] = React.useState(false);
-    const [content, setContent] = React.useState("");
-
-
-    const handleClose = (event, reason) => {
-        if (reason === 'clickaway') {
-            return;
-        }
-        setOpen(false);
     };
 
     const handleCloseUserMenu = () => {
@@ -170,7 +160,7 @@ function Header({ isLoggedIn }) {
                         <Box sx={{ flexGrow: 0 }}>
                             <Tooltip title="Mở cài đặt">
                                 <IconButton onClick={handleOpenUserMenu} sx={{ p: 0 }}>
-                                    <Avatar alt="Remy Sharp" src="/static/images/avatar/2.jpg" />
+                                    <Avatar alt="Remy Sharp" src={`data:image/jpeg;base64,${userData.avatar}`} />
                                 </IconButton>
                             </Tooltip>
                             <Menu
@@ -202,13 +192,6 @@ function Header({ isLoggedIn }) {
                     }
                 </Toolbar>
             </Container>
-            <Snackbar
-                open={open}
-                autoHideDuration={5000}
-                onClose={handleClose}
-                message={content}
-            />
-
         </AppBar >
     );
 }

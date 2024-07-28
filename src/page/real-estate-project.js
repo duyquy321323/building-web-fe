@@ -3,6 +3,7 @@ import { Box, Button, Checkbox, FormControl, FormControlLabel, InputLabel, MenuI
 import React, { useEffect, useState } from "react";
 import api from '../api';
 import CardBuilding from "./cardbuilding";
+import { useSnackbar } from './snackbarcontext';
 
 const RealEstateProject = () => {
 
@@ -41,6 +42,8 @@ const RealEstateProject = () => {
         }
     };
 
+    const { showSnackbar } = useSnackbar();
+
     useEffect(() => {
         fetchDistricts();
     }, []);
@@ -74,11 +77,10 @@ const RealEstateProject = () => {
                 setBuildingData(response.data.content);
             }
         } catch (error) {
-            setOpen(true);
             if (error.response && error.response.status === 400) {
-                setContent("Yêu cầu không hợp lệ.");
+                showSnackbar("Yêu cầu không hợp lệ.");
             } else {
-                setContent("Đã xảy ra lỗi, vui lòng thử lại sau.");
+                showSnackbar("Đã xảy ra lỗi, vui lòng thử lại sau.");
             }
             console.error('Error logging in:', error);
         }
@@ -107,17 +109,6 @@ const RealEstateProject = () => {
                 [name]: value
             }));
         }
-    };
-
-    const [open, setOpen] = React.useState(false);
-    const [content, setContent] = React.useState("");
-
-
-    const handleClose = (event, reason) => {
-        if (reason === 'clickaway') {
-            return;
-        }
-        setOpen(false);
     };
 
     return (

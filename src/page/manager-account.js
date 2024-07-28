@@ -1,14 +1,16 @@
 import EditIcon from '@mui/icons-material/Edit';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import GroupRemoveIcon from '@mui/icons-material/GroupRemove';
 import PersonAddAlt1Icon from '@mui/icons-material/PersonAddAlt1';
 import PersonRemoveIcon from '@mui/icons-material/PersonRemove';
 import SearchIcon from '@mui/icons-material/Search';
-import { Accordion, AccordionDetails, AccordionSummary, Box, Button, Dialog, DialogActions, DialogContent, DialogContentText, Snackbar, TextField, Typography } from "@mui/material";
+import { Accordion, AccordionDetails, AccordionSummary, Box, Button, Dialog, DialogActions, DialogContent, DialogContentText, TextField, Typography } from "@mui/material";
 import { DataGrid } from '@mui/x-data-grid';
 import React, { useEffect, useState } from 'react';
 import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import api from '../api';
+import { useSnackbar } from './snackbarcontext';
 
 const ManagerAccount = () => {
     const [fullname, setFullname] = useState("");
@@ -24,27 +26,22 @@ const ManagerAccount = () => {
     useEffect(() => {
         getAccount();
     }, [refresh]);
-    const handleClose = (event, reason) => {
-        if (reason === 'clickaway') {
-            return;
-        }
-        setOpen(false);
-    };
+
     const [scroll, setScroll] = React.useState('paper');
     const [contentPrevDelete, setContentPrevDelete] = useState("");
     const [openDialogPrevDelete, setOpenDialogPrevDelete] = useState(false);
-    const [content, setContent] = React.useState("");
-    const [open, setOpen] = React.useState(false);
     const handleClickOpenPreDelete = (scrollType, row) => () => {
         setOpenDialogPrevDelete(true);
         setScroll(scrollType);
         console.log("Click open dialog1");
-        console.log(selectedRows);
-        if (!Array.isArray(row) || (Array.isArray(row) && Array.from(row).length > 0)) {
+        if (!Array.isArray(row)) {
             setSelectedRows([row]);
             setContentPrevDelete("Chú chắc chứ?");
         }
-        else {
+        else if ((Array.isArray(row) && Array.from(row).length > 0)) {
+            setSelectedRows(row);
+            setContentPrevDelete("Chú chắc chứ?");
+        } else {
             setContentPrevDelete("Vui lòng chọn tài khoản để xóa!")
         }
     };
@@ -70,13 +67,24 @@ const ManagerAccount = () => {
             headerName: 'Thao tác',
             width: 200,
             renderCell: (params) => (
-                <Button
-                    variant="contained"
-                    color="primary"
-                    onClick={() => handleEditClick(params.row)}
-                >
-                    <EditIcon />
-                </Button>
+                <Box sx={{ display: 'flex', justifyContent: 'center', gap: '10px' }} my={0.3}>
+                    <Button
+                        variant="contained"
+                        color="primary"
+                        onClick={() => handleEditClick(params.row)}
+                    >
+                        <EditIcon />
+                    </Button>
+                    <Button
+                        title='Xóa tòa nhà'
+                        variant="contained"
+                        color="error"
+                        size='small'
+                        onClick={handleClickOpenPreDelete('paper', params.row.id)}
+                    >
+                        <PersonRemoveIcon />
+                    </Button>
+                </Box>
             ),
             align: 'center',
             headerAlign: 'center',
@@ -89,13 +97,13 @@ const ManagerAccount = () => {
     };
     const [selectedRows, setSelectedRows] = React.useState([]);
     const handleSelectionChange = (selection) => {
+        console.log("new selecrow: " + selection);
         setSelectedRows(selection);
     };
     const [users, setUsers] = useState([]);
     const getAccount = async () => {
         try {
             const response = await api.get(`/admin/account?fullname=${fullname}&id=${userData.id}`);
-            console.log(response);
             const userArray = response.data;
             setUsers(userArray);
         } catch (error) {
@@ -108,21 +116,23 @@ const ManagerAccount = () => {
         navigate(e);
     }
 
+    const { showSnackbar } = useSnackbar();
+
     const handleDeleteUser = async () => {
         try {
             if (selectedRows.length > 0) {
                 const ids = selectedRows.join(",");
-                await api.delete(`/admin/account/${ids}`);
+                console.log(`/admin/account?id=${ids}`);
+                await api.delete(`/admin/account?id=${ids}`);
                 setRefresh(pre => !pre);
                 setSelectedRows([]);
                 setOpenDialogPrevDelete(false);
             }
         } catch (error) {
-            setOpen(true);
             if (error.response && error.response.status === 400) {
-                setContent("Yêu cầu không hợp lệ.");
+                showSnackbar("Yêu cầu không hợp lệ.");
             } else {
-                setContent("Đã xảy ra lỗi, vui lòng thử lại sau.");
+                showSnackbar("Đã xảy ra lỗi, vui lòng thử lại sau.");
             }
             console.error('Error logging in:', error);
         }
@@ -130,7 +140,6 @@ const ManagerAccount = () => {
 
     const handleCloseDialogPrevDelete = () => {
         console.log("close dialog");
-        setSelectedRows([]);
         setOpenDialogPrevDelete(false);
     };
 
@@ -163,13 +172,13 @@ const ManagerAccount = () => {
                         </Button>
                     </Box>
                 </AccordionDetails>
-                <Box sx={{ display: 'flex', gap: '10px', my: '10px' }}>
-                    <Button color='error' variant="contained" title='Xóa tài khoản được chọn' onClick={handleClickOpenPreDelete('paper', selectedRows)} size='small'><PersonRemoveIcon style={{ fontSize: '30px' }} />
-                    </Button>
-                    <Button color='success' variant="contained" title='Thêm tài khoản' onClick={() => handleNavigate("admin/account-new")} size='small'><PersonAddAlt1Icon style={{ fontSize: '30px' }} />
-                    </Button>
-                </Box>
             </Accordion>
+            <Box sx={{ display: 'flex', gap: '10px', my: '10px', justifyContent: 'flex-end' }}>
+                <Button color='error' variant="contained" title='Xóa tài khoản được chọn' onClick={handleClickOpenPreDelete('paper', selectedRows)} size='small'><GroupRemoveIcon style={{ fontSize: '30px' }} />
+                </Button>
+                <Button color='success' variant="contained" title='Thêm tài khoản' onClick={() => handleNavigate("/admin/account-new")} size='small'><PersonAddAlt1Icon style={{ fontSize: '30px' }} />
+                </Button>
+            </Box>
             <div style={{ height: 400, width: '100%' }}>
                 <DataGrid
                     rows={users}
@@ -184,6 +193,7 @@ const ManagerAccount = () => {
                     disableColumnMenu
                     disableRowSelectionOnClick
                     disableColumnResize
+                    rowSelectionModel={selectedRows}
                     onRowSelectionModelChange={(newSelection) => handleSelectionChange(newSelection)}
                 />
             </div>
@@ -205,6 +215,7 @@ const ManagerAccount = () => {
                         </DialogContentText>
                     </DialogContent>
                     <DialogActions>
+                        {console.log("select row: " + selectedRows)}
                         {selectedRows.length > 0 ?
                             <Box>
                                 <Button onClick={handleCloseDialogPrevDelete}>Hủy thao tác</Button>
@@ -214,12 +225,6 @@ const ManagerAccount = () => {
                     </DialogActions>
                 </Dialog>
             </React.Fragment>
-            <Snackbar
-                open={open}
-                autoHideDuration={5000}
-                onClose={handleClose}
-                message={content}
-            />
         </>
     );
 }

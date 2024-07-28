@@ -1,12 +1,14 @@
 import { Visibility, VisibilityOff } from "@mui/icons-material";
-import { Box, Button, Checkbox, FormControl, FormControlLabel, IconButton, InputAdornment, InputLabel, OutlinedInput, Snackbar, TextField, Typography } from "@mui/material";
+import { Box, Button, Checkbox, FormControl, FormControlLabel, IconButton, InputAdornment, InputLabel, OutlinedInput, TextField, Typography } from "@mui/material";
 import React, { useState } from "react";
 import { useDispatch } from "react-redux";
 import { Link, useNavigate } from "react-router-dom";
 import api from '../api';
 import { loginSuccess } from "../redux/actions";
+import { useSnackbar } from "./snackbarcontext";
 
 const Login = () => {
+
     const [showPassword, setShowPassword] = React.useState(false);
     const [rememberMe, setRememberMe] = useState(false); // State để theo dõi checkbox
     const dispatch = useDispatch();
@@ -22,34 +24,52 @@ const Login = () => {
         password: ""
     });
 
+    const [errors, setErrors] = useState({
+        username: false,
+        password: false
+    });
+
     const handleChange = (event) => {
         const { name, value } = event.target;
         setUserInfo((prevState) => ({
             ...prevState,
             [name]: value,
         }));
+        if (value.trim() !== "") {
+            setErrors((prevErrors) => ({
+                ...prevErrors,
+                [name]: false,
+            }));
+        }
+    };
+
+    const handleBlur = (event) => {
+        const { name, value } = event.target;
+        if (value.trim() === "") {
+            setErrors((prevErrors) => ({
+                ...prevErrors,
+                [name]: true,
+            }));
+        }
     };
 
     const handleCheckboxChange = (event) => {
         setRememberMe(event.target.checked);
     };
 
-    const [open, setOpen] = React.useState(false);
-    const [content, setContent] = React.useState("");
-
-
-    const handleClose = (event, reason) => {
-        if (reason === 'clickaway') {
-            return;
-        }
-        setOpen(false);
-    };
-
     const navigate = useNavigate();
 
+    const { showSnackbar } = useSnackbar();
     const handleLogin = async () => {
+        if (!userInfo.username.trim() || !userInfo.password.trim()) {
+            setErrors({
+                username: !userInfo.username.trim(),
+                password: !userInfo.password.trim(),
+            });
+            showSnackbar("Vui lòng điền tất cả các trường bắt buộc!");
+            return;
+        }
         try {
-            setOpen(true);
             const response = await api.post(`/account/login?remember-me=${rememberMe}`, userInfo);
             console.log(response.data);
             if (response && response.data.token) {
@@ -59,14 +79,14 @@ const Login = () => {
                 }
                 const userData = response.data;
                 dispatch(loginSuccess(userData));
-                setContent("Đăng nhập thành công!");
+                showSnackbar("Đăng nhập thành công!");
                 navigate("/home")
             }
         } catch (error) {
             if (error.response && error.response.status === 400) {
-                setContent("Tên đăng nhập hoặc mật khẩu không đúng.");
+                showSnackbar("Tên đăng nhập hoặc mật khẩu không đúng.");
             } else {
-                setContent("Đã xảy ra lỗi, vui lòng thử lại sau.");
+                showSnackbar("Đã xảy ra lỗi, vui lòng thử lại sau.");
             }
             console.error('Error logging in:', error);
         }
@@ -95,9 +115,13 @@ const Login = () => {
                     variant="outlined"
                     value={userInfo.username}
                     onChange={handleChange}
+                    onBlur={handleBlur}
+                    error={errors.username}
+                    helperText={errors.username ? "Tên đăng nhập là bắt buộc" : ""}
+                    required
                     fullWidth
                 />
-                <FormControl sx={{ width: '100%' }} variant="outlined">
+                <FormControl sx={{ width: '100%' }} variant="outlined" error={errors.password} required>
                     <InputLabel htmlFor="outlined-adornment-password">Mật khẩu</InputLabel>
                     <OutlinedInput
                         fullWidth
@@ -119,7 +143,9 @@ const Login = () => {
                         label="Mật khẩu"
                         value={userInfo.password}
                         onChange={handleChange}
+                        onBlur={handleBlur}
                     />
+                    {errors.password && <Typography variant="caption" color="error">Mật khẩu là bắt buộc</Typography>}
                 </FormControl>
                 <FormControlLabel
                     value="true"
@@ -134,12 +160,6 @@ const Login = () => {
                 <Button variant="contained" onClick={handleLogin} fullWidth>Đăng nhập</Button>
                 <Typography color={'CaptionText'}>Bạn chưa có tài khoản? <Link to="/account/register">Đăng ký</Link></Typography>
             </Box>
-            <Snackbar
-                open={open}
-                autoHideDuration={5000}
-                onClose={handleClose}
-                message={content}
-            />
         </>
     );
 }

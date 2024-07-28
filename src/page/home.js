@@ -1,6 +1,6 @@
 import { Box, Pagination, Paper } from "@mui/material";
 import { makeStyles } from "@mui/styles";
-import React from 'react';
+import React, { useEffect } from 'react';
 import SwipeableViews from "react-swipeable-views";
 import { mod } from 'react-swipeable-views-core';
 import { autoPlay, virtualize } from 'react-swipeable-views-utils';
@@ -62,6 +62,10 @@ const Home = () => {
             </div>
         );
     };
+
+    useEffect(() => {
+
+    }, [])
 
     return (
         <>

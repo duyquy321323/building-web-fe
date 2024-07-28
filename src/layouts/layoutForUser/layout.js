@@ -4,7 +4,7 @@ import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import ManageAccountsIcon from '@mui/icons-material/ManageAccounts';
 import MenuIcon from '@mui/icons-material/Menu';
 import SupportAgentIcon from '@mui/icons-material/SupportAgent';
-import { Avatar, Button, Menu, MenuItem, Snackbar, Tooltip } from '@mui/material';
+import { Avatar, Button, Menu, MenuItem, Tooltip } from '@mui/material';
 import MuiAppBar from '@mui/material/AppBar';
 import Box from '@mui/material/Box';
 import CssBaseline from '@mui/material/CssBaseline';
@@ -23,6 +23,7 @@ import * as React from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Outlet, useNavigate } from 'react-router-dom';
 import api from '../../api';
+import { useSnackbar } from '../../page/snackbarcontext';
 import { logout } from '../../redux/actions';
 import Footer from '../footer';
 
@@ -117,9 +118,10 @@ export default function LayoutForUser({ name, isLoggedIn }) {
 
     const navigate = useNavigate();
 
+    const { showSnackbar } = useSnackbar();
+
     const handleLogout = async () => {
         try {
-            setOpenSetting(true);
             // Gửi yêu cầu POST tới API /account/logout
             const response = await api.post('/account/logout');
             if (response.status === 200) {
@@ -128,25 +130,14 @@ export default function LayoutForUser({ name, isLoggedIn }) {
                 localStorage.removeItem('expiryTime');
                 setAnchorElUser(null);
                 dispatch(logout());
-                setContent("Đăng xuất thành công!");
+                showSnackbar("Đăng xuất thành công!");
                 // Chuyển hướng người dùng đến trang đăng nhập
                 navigate('/account/login');
             }
         } catch (error) {
-            setContent("Đăng xuất thất bại. Hãy đăng nhập trước!");
+            showSnackbar("Đăng xuất thất bại. Hãy đăng nhập trước!");
             console.error("Error khi logout:", error);
         }
-    };
-
-    const [openSetting, setOpenSetting] = React.useState(false);
-    const [content, setContent] = React.useState("");
-
-
-    const handleClose = (event, reason) => {
-        if (reason === 'clickaway') {
-            return;
-        }
-        setOpenSetting(false);
     };
 
     const handleCloseUserMenu = () => {
@@ -163,15 +154,17 @@ export default function LayoutForUser({ name, isLoggedIn }) {
                 <CssBaseline />
                 <AppBar position="fixed" open={open}>
                     <Toolbar>
-                        <IconButton
-                            color="inherit"
-                            aria-label="open drawer"
-                            onClick={handleDrawerOpen}
-                            edge="start"
-                            sx={{ mr: 2, ...(open && { display: 'none' }) }}
-                        >
-                            <MenuIcon />
-                        </IconButton>
+                        {(userData.roles.includes("STAFF") || userData.roles.includes("MANAGER")) ?
+                            <IconButton
+                                color="inherit"
+                                aria-label="open drawer"
+                                onClick={handleDrawerOpen}
+                                edge="start"
+                                sx={{ mr: 2, ...(open && { display: 'none' }) }}
+                            >
+                                <MenuIcon />
+                            </IconButton> : <></>
+                        }
                         <Typography variant="h6" noWrap component="div">
                             {name}
                         </Typography>
@@ -185,7 +178,7 @@ export default function LayoutForUser({ name, isLoggedIn }) {
                             </Button>
                             <Tooltip title="Mở cài đặt">
                                 <IconButton onClick={handleOpenUserMenu} sx={{ p: 0 }}>
-                                    <Avatar alt="Remy Sharp" src="/static/images/avatar/2.jpg" />
+                                    <Avatar alt="User" src={`data:image/jpeg;base64,${userData.avatar}`} />
                                 </IconButton>
                             </Tooltip>
                             <Menu
@@ -229,11 +222,13 @@ export default function LayoutForUser({ name, isLoggedIn }) {
                     anchor="left"
                     open={open}
                 >
-                    <DrawerHeader>
-                        <IconButton onClick={handleDrawerClose}>
-                            {theme.direction === 'ltr' ? <ChevronLeftIcon /> : <ChevronRightIcon />}
-                        </IconButton>
-                    </DrawerHeader>
+                    {(userData.roles.includes("STAFF") || userData.roles.includes("MANAGER")) ?
+                        <DrawerHeader>
+                            <IconButton onClick={handleDrawerClose}>
+                                {theme.direction === 'ltr' ? <ChevronLeftIcon /> : <ChevronRightIcon />}
+                            </IconButton>
+                        </DrawerHeader> : <></>
+                    }
                     <Divider />
                     <List>
                         {['Quản lý tòa nhà', 'Quản lý khách hàng'].map((text, index) => (
@@ -247,19 +242,23 @@ export default function LayoutForUser({ name, isLoggedIn }) {
                             </ListItem>
                         ))}
                     </List>
-                    <Divider />
-                    <List>
-                        {['Quản lý tài khoản'].map((text, index) => (
-                            <ListItem key={text} disablePadding>
-                                <ListItemButton onClick={() => navigate("/admin/account")}>
-                                    <ListItemIcon>
-                                        <ManageAccountsIcon />
-                                    </ListItemIcon>
-                                    <ListItemText primary={text} />
-                                </ListItemButton>
-                            </ListItem>
-                        ))}
-                    </List>
+                    {userData.roles.includes('MANAGER') ?
+                        <>
+                            <Divider />
+                            <List>
+                                {['Quản lý tài khoản'].map((text, index) => (
+                                    <ListItem key={text} disablePadding>
+                                        <ListItemButton onClick={() => navigate("/admin/account")}>
+                                            <ListItemIcon>
+                                                <ManageAccountsIcon />
+                                            </ListItemIcon>
+                                            <ListItemText primary={text} />
+                                        </ListItemButton>
+                                    </ListItem>
+                                ))}
+                            </List>
+                        </> : <></>
+                    }
 
                 </Drawer>
                 <Main open={open}>
@@ -267,12 +266,6 @@ export default function LayoutForUser({ name, isLoggedIn }) {
                     <ContentContainer>
                         <Outlet />
                     </ContentContainer>
-                    <Snackbar
-                        open={openSetting}
-                        autoHideDuration={5000}
-                        onClose={handleClose}
-                        message={content}
-                    />
                 </Main>
 
             </Box>

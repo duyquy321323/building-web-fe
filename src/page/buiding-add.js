@@ -1,9 +1,10 @@
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import DomainAddIcon from '@mui/icons-material/DomainAdd';
-import { Box, Button, Checkbox, FormControl, FormControlLabel, Grid, InputLabel, MenuItem, Select, Snackbar, styled, TextField, Typography } from "@mui/material";
+import { Box, Button, Checkbox, FormControl, FormControlLabel, FormHelperText, Grid, InputLabel, MenuItem, Select, styled, TextField, Typography } from "@mui/material";
 import React, { useEffect, useState } from "react";
 import { useNavigate } from 'react-router-dom';
 import api from '../api';
+import { useSnackbar } from './snackbarcontext';
 
 const VisuallyHiddenInput = styled('input')({
     clip: 'rect(0 0 0 0)',
@@ -17,7 +18,7 @@ const VisuallyHiddenInput = styled('input')({
     width: 1,
 });
 
-const BuildingAddEdit = ({ name }) => {
+const BuildingAdd = ({ name }) => {
 
     const [buildingAdd, setBuildingAdd] = useState({
         name: "",
@@ -48,6 +49,17 @@ const BuildingAddEdit = ({ name }) => {
         rentTypes: [],
         note: "",
         linkOfBuilding: null
+    });
+
+    const [errors, setErrors] = useState({
+        name: false,
+        street: false,
+        ward: false,
+        district: false,
+        floorArea: false,
+        rentArea: false,
+        rentPrice: false,
+        rentTypes: false
     });
 
     const [districts, setDistricts] = useState([]);
@@ -90,7 +102,24 @@ const BuildingAddEdit = ({ name }) => {
         fetchRentTypes();
     }, []);
 
+    const { showSnackbar } = useSnackbar();
+
     const handleAddBuilding = async () => {
+        const newErrors = {
+            name: !buildingAdd.name.trim(),
+            street: !buildingAdd.street.trim(),
+            ward: !buildingAdd.ward.trim(),
+            district: !buildingAdd.district !== null,
+            floorArea: !buildingAdd.floorArea !== null,
+            rentArea: !buildingAdd.rentArea.trim(),
+            rentPrice: !buildingAdd.rentPrice !== null,
+            rentTypes: !buildingAdd.rentTypes.length !== 0,
+        };
+        if (Object.values(newErrors).some((error) => error)) {
+            setErrors(newErrors);
+            showSnackbar("Vui lòng điền tất cả các trường bắt buộc!");
+            return;
+        }
         try {
             const formData = new FormData();
             if (buildingAdd) {
@@ -125,36 +154,25 @@ const BuildingAddEdit = ({ name }) => {
                     sessionStorage.removeItem("idBuilding");
                 }
                 if (response.status === 201 || response.status === 200) {
-                    setOpen(true);
-                    setContent(name + " thành công");
+                    showSnackbar(name + " thành công");
                 }
             }
         } catch (error) {
-            setOpen(true);
             if (error.response && error.response.status === 400) {
-                setContent("Yêu cầu không hợp lệ.");
+                showSnackbar("Yêu cầu không hợp lệ.");
             } else {
-                setContent("Đã xảy ra lỗi, vui lòng thử lại sau.");
+                showSnackbar("Đã xảy ra lỗi, vui lòng thử lại sau.");
             }
             console.error('Error logging in:', error);
         }
     };
 
-    const [open, setOpen] = React.useState(false);
-    const [content, setContent] = React.useState("");
     const navigate = useNavigate();
     const handleClosePage = () => {
         sessionStorage.removeItem("idBuilding");
         navigate("/buildings/search");
     }
 
-
-    const handleClose = (event, reason) => {
-        if (reason === 'clickaway') {
-            return;
-        }
-        setOpen(false);
-    };
     const handleChange = (event) => {
         const { name, value, type, checked } = event.target;
 
@@ -178,6 +196,22 @@ const BuildingAddEdit = ({ name }) => {
                 [name]: value
             }));
         }
+        setErrors(prevErrors => ({
+            ...prevErrors,
+            [name]: type === 'checkbox' ? !checked : (type === 'text' ? value.trim() === '' : value === null),
+        }));
+    };
+
+    const handleBlur = (event) => {
+        const { name, value, type, checked } = event.target;
+
+        // Set error if the required field is empty
+        if (value === "") {
+            setErrors(prevErrors => ({
+                ...prevErrors,
+                [name]: type === 'checkbox' ? !checked : (type === 'text' ? value.trim() === '' : value === null),
+            }));
+        }
     };
 
     return (
@@ -192,6 +226,10 @@ const BuildingAddEdit = ({ name }) => {
                     value={buildingAdd.name}
                     onChange={handleChange}
                     size='small'
+                    onBlur={handleBlur}
+                    error={errors.name}
+                    helperText={errors.name ? "Tên tòa nhà là bắt buộc" : ""}
+                    required
                     fullWidth
                 />
                 <TextField
@@ -202,6 +240,10 @@ const BuildingAddEdit = ({ name }) => {
                     value={buildingAdd.street}
                     onChange={handleChange}
                     size='small'
+                    onBlur={handleBlur}
+                    error={errors.street}
+                    helperText={errors.street ? "Đường là bắt buộc" : ""}
+                    required
                     fullWidth
                 />
                 <TextField
@@ -212,9 +254,13 @@ const BuildingAddEdit = ({ name }) => {
                     value={buildingAdd.ward}
                     onChange={handleChange}
                     size='small'
+                    onBlur={handleBlur}
+                    error={errors.ward}
+                    helperText={errors.ward ? "Phường là bắt buộc" : ""}
+                    required
                     fullWidth
                 />
-                <FormControl fullWidth size='small'>
+                <FormControl fullWidth size='small' error={errors.district} required>
                     <InputLabel id="demo-simple-select-label">---Chọn Quận---</InputLabel>
                     <Select
                         labelId="demo-simple-select-label"
@@ -223,11 +269,13 @@ const BuildingAddEdit = ({ name }) => {
                         value={buildingAdd.district}
                         label="---Chọn Quận---"
                         onChange={handleChange}
+                        onBlur={handleBlur}
                     >
                         {districts.map((district) =>
                             <MenuItem value={district.id}>{district.name}</MenuItem>)
                         }
                     </Select>
+                    {errors.district && <Typography color="error">Quận là bắt buộc</Typography>}
                 </FormControl>
                 <TextField
                     id="structure"
@@ -259,6 +307,10 @@ const BuildingAddEdit = ({ name }) => {
                     onChange={handleChange}
                     size='small'
                     type="number"
+                    onBlur={handleBlur}
+                    error={errors.floorArea}
+                    helperText={errors.floorArea ? "Diện tích sàn là bắt buộc" : ""}
+                    required
                     fullWidth
                 />
                 <TextField
@@ -288,6 +340,10 @@ const BuildingAddEdit = ({ name }) => {
                     variant="outlined"
                     value={buildingAdd.rentArea}
                     onChange={handleChange}
+                    onBlur={handleBlur}
+                    error={errors.rentArea}
+                    helperText={errors.rentArea ? "Diện tích thuê là bắt buộc" : ""}
+                    required
                     size='small'
                     fullWidth
                 />
@@ -298,6 +354,10 @@ const BuildingAddEdit = ({ name }) => {
                     variant="outlined"
                     value={buildingAdd.rentPrice}
                     onChange={handleChange}
+                    onBlur={handleBlur}
+                    error={errors.rentPrice}
+                    helperText={errors.rentPrice ? "Giá thuê là bắt buộc" : ""}
+                    required
                     size='small'
                     type="number"
                     fullWidth
@@ -469,6 +529,9 @@ const BuildingAddEdit = ({ name }) => {
                         <FormControlLabel control={<Checkbox />} value={rentType.id} onChange={handleChange} label={rentType.name} />
                     )
                     }
+                    {errors.rentTypes && (
+                        <FormHelperText error>Loại tòa nhà là bắt buộc</FormHelperText>
+                    )}
                 </Box>
                 <Box>
                     <Typography color='rgba(0, 0, 0, 0.6)' fontWeight='bold'>Ảnh tòa nhà </Typography>
@@ -498,19 +561,13 @@ const BuildingAddEdit = ({ name }) => {
                     </Grid>
                     <Grid item xs={5.75}>
                         <Button sx={{ height: '50px' }} fullWidth variant="contained" startIcon={<DomainAddIcon style={{ fontSize: '40px' }} />} onClick={handleAddBuilding}>
-                            Thêm
+                            {name}
                         </Button>
                     </Grid>
                 </Grid>
             </Box >
-            <Snackbar
-                open={open}
-                autoHideDuration={5000}
-                onClose={handleClose}
-                message={content}
-            />
         </>
     );
 }
 
-export default BuildingAddEdit;
+export default BuildingAdd;

@@ -1,6 +1,7 @@
-import { Box, Button, Grid, Snackbar, TextField, Typography } from "@mui/material";
-import React from "react";
+import { Box, Button, Grid, TextField, Typography } from "@mui/material";
+import React, { useState } from "react";
 import api from '../api';
+import { useSnackbar } from "./snackbarcontext";
 
 const Contact = () => {
 
@@ -12,40 +13,62 @@ const Contact = () => {
         nameCompany: ""
     })
 
+    const [errors, setErrors] = useState({
+        fullname: false,
+        phone: false,
+        demand: false
+    });
+
     const handleChange = (event) => {
         const { name, value } = event.target;
         setUserInfo((prevState) => ({
             ...prevState,
             [name]: value,
         }));
+        if (value.trim() !== "") {
+            setErrors((prevErrors) => ({
+                ...prevErrors,
+                [name]: false,
+            }));
+        }
     };
 
-    const [open, setOpen] = React.useState(false);
-    const [content, setContent] = React.useState("");
+    const handleBlur = (event) => {
+        const { name, value } = event.target;
+        if (value.trim() === "") {
+            setErrors((prevErrors) => ({
+                ...prevErrors,
+                [name]: true,
+            }));
+        }
+    };
+
+    const { showSnackbar } = useSnackbar();
 
     const handleContact = async () => {
+        if (!userInfo.fullname.trim() || !userInfo.phone.trim() || !userInfo.demand.trim()) {
+            setErrors({
+                fullname: !userInfo.fullname.trim(),
+                phone: !userInfo.phone.trim(),
+                demand: !userInfo.demand.trim(),
+            });
+            showSnackbar("Vui lòng điền tất cả các trường bắt buộc!");
+            return;
+        }
         console.log(userInfo);
-        setOpen(true);
         try {
             const res = await api.post("/customer/contact", userInfo);
             console.log(res);
             // Kiểm tra nếu request thành công
             if (res.status === 201) {
                 console.log(res);
-                setContent("Gửi liên hệ thành công")
+                showSnackbar("Gửi liên hệ thành công");
             }
         } catch (error) {
             // Xử lý lỗi nếu có
             console.error("Error:", error);
-            setContent("Gửi liên hệ thất bại!")
+            showSnackbar("Gửi liên hệ thất bại!");
         }
-    };
-
-    const handleClose = (event, reason) => {
-        if (reason === 'clickaway') {
-            return;
-        }
-        setOpen(false);
     };
 
     return (
@@ -83,6 +106,10 @@ const Contact = () => {
                             variant="outlined"
                             value={userInfo.fullname}
                             onChange={handleChange}
+                            onBlur={handleBlur}
+                            error={errors.fullname}
+                            helperText={errors.fullname ? "Tên là bắt buộc" : ""}
+                            required
                             fullWidth
                         />
                         <TextField
@@ -92,6 +119,10 @@ const Contact = () => {
                             variant="outlined"
                             value={userInfo.phone}
                             onChange={handleChange}
+                            onBlur={handleBlur}
+                            error={errors.phone}
+                            helperText={errors.phone ? "Số điện thoại là bắt buộc" : ""}
+                            required
                             fullWidth
                         />
                         <TextField
@@ -110,6 +141,10 @@ const Contact = () => {
                             variant="outlined"
                             value={userInfo.demand}
                             onChange={handleChange}
+                            onBlur={handleBlur}
+                            error={errors.demand}
+                            helperText={errors.demand ? "Nội dung là bắt buộc" : ""}
+                            required
                             fullWidth
                         />
                         <TextField
@@ -125,12 +160,6 @@ const Contact = () => {
                     </Box>
                 </Grid>
             </Grid>
-            <Snackbar
-                open={open}
-                autoHideDuration={5000}
-                onClose={handleClose}
-                message={content}
-            />
         </Box >
     );
 }
