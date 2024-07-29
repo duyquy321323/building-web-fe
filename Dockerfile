@@ -10,6 +10,8 @@ COPY . .
 
 ENV NODE_OPTIONS="--max-old-space-size=4096"
 
+ENV PORT=3000
+
 EXPOSE 3000
 
 CMD [ "npm","run","start" ]
