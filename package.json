@@ -1,6 +1,6 @@
 {
   "name": "buildingweb",
-  "homepage": "https://duyquy321323.github.io/building-web-fe",
+  "homepage": "http://duyquy321323.github.io/building-web-fe",
   "proxy": "http://deploy-be-mysql.up.railway.app:8081",
   "version": "0.1.0",
   "private": true,
