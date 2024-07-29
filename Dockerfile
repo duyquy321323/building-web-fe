@@ -6,6 +6,8 @@ COPY package*.json ./
 
 RUN npm install --legacy-peer-deps
 
+RUN npm i webpack-dev-middleware
+
 COPY . .
 
 ENV NODE_OPTIONS="--max-old-space-size=4096"
