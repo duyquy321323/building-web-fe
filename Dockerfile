@@ -6,7 +6,7 @@ COPY package*.json ./
 
 RUN npm install --legacy-peer-deps
 
-RUN npm i webpack-dev-middleware
+RUN npm install webpack-dev-middleware
 
 COPY . .
 
