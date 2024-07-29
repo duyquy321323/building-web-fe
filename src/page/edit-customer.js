@@ -135,6 +135,9 @@ const EditCustomer = () => {
     const [errors, setErrors] = useState({
         note: false
     });
+    const [errorsEdit, setErrorsEdit] = useState({
+        noteEdit: false
+    });
 
     const [transactionData, setTransactionData] = useState([[]]);
     const getTransactionData = useCallback(async () => {
@@ -199,6 +202,15 @@ const EditCustomer = () => {
         }
     }, []);
 
+    const handleBlurEdit = (event) => {
+        const { name, value } = event.target;
+        if (value.trim() === "") {
+            setErrorsEdit((prevErrors) => ({
+                ...prevErrors,
+                [name]: true,
+            }));
+        }
+    };
     const handleBlur = (event) => {
         const { name, value } = event.target;
         if (value.trim() === "") {
@@ -258,16 +270,16 @@ const EditCustomer = () => {
         console.log("Dòng 237: changeNote");
         setNoteEdit(e.target.value);
         if (e.target !== "") {
-            setErrors(({
-                note: false
+            setErrorsEdit(({
+                noteEdit: false
             }));
         }
     }, []);
 
     const handleEditTransaction = useCallback(async () => {
-        if (!note.trim()) {
-            setErrors({
-                note: !note.trim(),
+        if (!noteEdit.trim()) {
+            setErrorsEdit({
+                noteEdit: !noteEdit.trim(),
             });
             showSnackbar("Vui lòng điền tất cả các trường bắt buộc!");
             return;
@@ -497,13 +509,13 @@ const EditCustomer = () => {
                     <DialogContent>
                         <TextField
                             margin="dense"
-                            name="note"
+                            name="noteEdit"
                             value={noteEdit}
                             label="Nội dung giao dịch"
                             onChange={changeNote}
                             onBlur={handleBlur}
-                            error={errors.note}
-                            helperText={errors.note ? "Nội dung là bắt buộc" : ""}
+                            error={errorsEdit.noteEdit}
+                            helperText={errorsEdit.noteEdit ? "Nội dung là bắt buộc" : ""}
                             required
                             fullWidth
                         />
